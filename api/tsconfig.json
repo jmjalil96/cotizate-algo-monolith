@@ -1,0 +1,55 @@
+{
+	"compilerOptions": {
+		// File Layout
+		"rootDir": "./src",
+		"outDir": "./dist",
+		"baseUrl": "./src",
+		"paths": {
+			"@/*": ["*"],
+			"@config/*": ["config/*"],
+			"@routes/*": ["routes/*"],
+			"@middleware/*": ["middleware/*"]
+		},
+
+		// Module Resolution (Updated for 2025)
+		"module": "NodeNext",
+		"target": "ESNext",
+		"moduleResolution": "NodeNext",
+		"resolveJsonModule": true,
+		"esModuleInterop": true,
+		"allowSyntheticDefaultImports": true,
+
+		// Type Checking - STRICT
+		"strict": true,
+		"noUncheckedIndexedAccess": true,
+		"exactOptionalPropertyTypes": true,
+		"noPropertyAccessFromIndexSignature": true,
+		"noImplicitOverride": true,
+
+		// Code Quality
+		"noImplicitReturns": true,
+		"noUnusedLocals": true,
+		"noUnusedParameters": true,
+		"noFallthroughCasesInSwitch": true,
+		"allowUnreachableCode": false,
+		"allowUnusedLabels": false,
+
+		// ESM Support
+		"verbatimModuleSyntax": true,
+		"isolatedModules": true,
+		"moduleDetection": "force",
+
+		// Output
+		"sourceMap": true,
+		"declaration": true,
+		"declarationMap": true,
+		"removeComments": true,
+
+		// Performance
+		"skipLibCheck": true,
+		"lib": ["ESNext"],
+		"types": ["node"]
+	},
+	"include": ["src/**/*"],
+	"exclude": ["node_modules", "dist", "**/*.test.ts", "**/*.spec.ts"]
+}
