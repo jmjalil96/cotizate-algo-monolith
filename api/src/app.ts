@@ -1,5 +1,6 @@
 import type { Express, NextFunction, Request, Response } from "express";
 import express from "express";
+import { authRoutes } from "./features/auth/domain/auth.routes.js";
 import { notFound } from "./shared/errors/AppError.js";
 import { errorHandler } from "./shared/middleware/errorHandler.js";
 import { addRequestStartTime, requestLogger } from "./shared/middleware/requestLogger.js";
@@ -27,6 +28,9 @@ app.use(applySecurity);
 app.get("/health", (_req: Request, res: Response) => {
 	res.json({ status: "ok" });
 });
+
+// API Routes
+app.use("/api/v1/auth", authRoutes);
 
 // 404 handler (JSON, minimal logging)
 app.use((req: Request, _res: Response, next: NextFunction) => {

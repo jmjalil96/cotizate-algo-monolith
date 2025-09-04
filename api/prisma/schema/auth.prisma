@@ -105,3 +105,39 @@ model OtpAttempt {
   @@index([tokenId])
   @@map("otp_attempts")
 }
+
+// User authentication sessions
+model Session {
+  id              String        @id @default(cuid())
+
+  // User relationship
+  userId          String
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organizationId  String        // Denormalized for fast access
+  organization    Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  // Token management (hashed for security)
+  tokenHash       String        @unique @db.VarChar(64) // SHA256 hash for lookup
+  tokenLastFour   String        @db.VarChar(4)         // Last 4 chars for UI "...x7Kp"
+
+  // Device tracking
+  ipAddress       String?
+  userAgent       String?       @db.Text
+
+  // Activity tracking
+  lastActivity    DateTime      @default(now())
+  expiresAt       DateTime      // 30 days from creation
+
+  // Revocation
+  revokedAt       DateTime?     // Soft delete
+  revokedReason   String?       // "logout", "security", "password_changed"
+
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([tokenHash])
+  @@index([userId])
+  @@index([expiresAt])
+  @@index([revokedAt])
+  @@map("sessions")
+}

@@ -8,7 +8,13 @@ import { env } from "../../config/env.js";
 import { logger } from "../../config/logger.js";
 
 // Skip logging for these paths
-const skipPaths = ["/health", "/metrics", "/favicon.ico"];
+const skipPaths = [
+	"/health",
+	"/metrics",
+	"/favicon.ico",
+	"/api/v1/health", // Skip API health checks
+	"/api/v1/metrics", // Skip API metrics
+];
 
 // Custom log level based on status code
 const customLogLevel = (

@@ -12,6 +12,7 @@ model Organization {
   roles Role[]
   auditLogs AuditLog[]
   otpSessions OtpSession[]
+  sessions Session[]
   clients Client[]
 
   @@map("organizations")
@@ -31,6 +32,11 @@ model User {
   mfaEnabled     Boolean       @default(false)
   mfaBackupCodes Json?         // Array of hashed backup codes
   
+  // Login security tracking
+  loginAttempts  Int           @default(0)
+  isLocked       Boolean       @default(false)
+  lastLoginAt    DateTime?
+  
   deletedAt      DateTime?
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
@@ -40,6 +46,7 @@ model User {
   auditLogs      AuditLog[]
   otpSessions    OtpSession[]
   otpAttempts    OtpAttempt[]
+  sessions       Session[]
   
   // Client relations
   ownedClients   Client[]      @relation("ClientOwner")

@@ -10,14 +10,17 @@ enum AuditAction {
   IMPORT
   ACCESS
   PERMISSION_CHANGE
+  USER_REGISTERED
+  REGISTRATION_FAILED
+  LOGIN_FAILED
 }
 
 model AuditLog {
   id             String      @id @default(cuid())
-  userId         String
-  user           User        @relation(fields: [userId], references: [id], onDelete: Restrict)
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  userId         String?
+  user           User?       @relation(fields: [userId], references: [id], onDelete: Restrict)
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Restrict)
   action         AuditAction
   resource       String      // e.g., "users", "quotes", "roles"
   resourceId     String?     // ID of the affected resource

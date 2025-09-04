@@ -75,7 +75,7 @@ const prodConfig = {
 
 // Development configuration
 const devConfig = {
-	level: "debug", // Show all logs in development
+	level: env.LOG_LEVEL || "info", // Use LOG_LEVEL from env or default to info
 	transport: devTransport,
 	serializers: {
 		err: pino.stdSerializers.err,

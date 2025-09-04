@@ -22,7 +22,7 @@ export const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
 				message: err.message,
 				stack: err.stack,
 				name: err.name,
-				...(err instanceof AppError && { statusCode: err.statusCode }),
+				...(err instanceof AppError && { statusCode: err.statusCode, code: err.code }),
 				...(err instanceof ZodError && { issueCount: err.issues.length }),
 			},
 			requestId,
@@ -53,6 +53,7 @@ export const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
 		const validationError = err as AppError & { issues?: unknown };
 		return res.status(err.statusCode).json({
 			error: err.message,
+			code: err.code,
 			requestId,
 			// Include validation details in dev mode if present
 			details: isDev && validationError.issues ? validationError.issues : undefined,
