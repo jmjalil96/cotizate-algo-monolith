@@ -1,0 +1,33 @@
+# Git
+.git
+.gitignore
+
+# Node
+node_modules
+npm-debug.log
+yarn-error.log
+
+# Build outputs
+dist
+build
+*.log
+
+# Environment files (except .env.docker which Docker needs)
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+.DS_Store
+
+# Testing
+coverage
+.nyc_output
+
+# Temporary files
+tmp
+temp

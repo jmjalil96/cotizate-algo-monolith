@@ -1,8 +1,13 @@
 node_modules/
 dist/
 .env
+.env.local
+.env.*.local
 *.log
 .DS_Store
 coverage/
 .vscode/
 .idea/
+
+# Prisma - Keep migrations when you start creating them
+# prisma/migrations

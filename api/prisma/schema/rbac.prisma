@@ -1,0 +1,68 @@
+// Role-Based Access Control models
+
+enum PermissionScope {
+  SYSTEM         // Super admin only - manage system settings
+  ORGANIZATION   // Within own organization only
+  TEAM           // Future: within own team(s)
+  OWN            // Only own resources
+}
+
+model Role {
+  id             String        @id @default(cuid())
+  name           String
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  deletedAt      DateTime?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  users          UserRole[]
+  permissions    RolePermission[]
+
+  @@unique([name, organizationId])
+  @@map("roles")
+}
+
+model UserRole {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  roleId    String
+  role      Role     @relation(fields: [roleId], references: [id], onDelete: Restrict)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, roleId])
+  @@map("user_roles")
+}
+
+model Permission {
+  id          String          @id @default(cuid())
+  name        String          @unique
+  resource    String
+  action      String
+  scope       PermissionScope @default(ORGANIZATION)
+  description String?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  roles       RolePermission[]
+
+  @@index([resource])
+  @@index([action])
+  @@index([scope])
+  @@map("permissions")
+}
+
+model RolePermission {
+  id           String     @id @default(cuid())
+  roleId       String
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permissionId String
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  @@unique([roleId, permissionId])
+  @@map("role_permissions")
+}

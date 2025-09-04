@@ -1,0 +1,16 @@
+// This is your Prisma schema file
+// Learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Generator configuration - ONLY ONE generator allowed
+generator client {
+  provider = "prisma-client-js"
+}
+
+// Datasource configuration - ONLY ONE datasource allowed
+datasource db {
+  provider          = "postgresql"
+  url               = env("DATABASE_URL")
+  shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
+}
+
+// Common enums that will be used across multiple schemas can be defined here

@@ -1,0 +1,205 @@
+// ============================
+// CLIENT/CRM DOMAIN MODELS
+// ============================
+
+model Client {
+  id              String       @id @default(uuid())
+  
+  // Individual fields
+  firstName       String?      @map("first_name")
+  lastName        String?      @map("last_name")
+  sex             Sex?
+  dateOfBirth     DateTime?    @map("date_of_birth")
+  occupation      String?
+  
+  // Company fields
+  companyName     String?      @map("company_name")
+  industryType    String?      @map("industry_type")
+  companySize     CompanySize? @map("company_size")
+  foundedDate     DateTime?    @map("founded_date")
+  legalStructure  LegalStructure? @map("legal_structure")
+  
+  // Common fields
+  displayName     String       @map("display_name")
+  clientType      ClientType   @map("client_type")
+  
+  // Identification
+  idType          IdType       @map("id_type")
+  idNumber        String       @unique @map("id_number")
+  
+  // Primary contact (embedded)
+  email           String       
+  phoneMobile     String       @map("phone_mobile")
+  phoneWork       String?      @map("phone_work")
+  
+  // Business fields
+  economicActivity String?     @map("economic_activity")
+  
+  // Organization & Ownership
+  organizationId  String       @map("organization_id")
+  ownerId         String       @map("owner_id")
+  
+  // Soft delete
+  isActive        Boolean      @default(true) @map("is_active")
+  deletedAt       DateTime?    @map("deleted_at")
+  
+  // Audit fields
+  createdById     String       @map("created_by_id")
+  updatedById     String?      @map("updated_by_id")
+  createdAt       DateTime     @default(now()) @map("created_at")
+  updatedAt       DateTime     @updatedAt @map("updated_at")
+  
+  // Relations
+  organization    Organization @relation(fields: [organizationId], references: [id])
+  owner           User         @relation("ClientOwner", fields: [ownerId], references: [id])
+  createdBy       User         @relation("ClientCreatedBy", fields: [createdById], references: [id])
+  updatedBy       User?        @relation("ClientUpdatedBy", fields: [updatedById], references: [id])
+  addresses       Address[]    
+  contacts        Contact[]    
+  
+  @@index([idNumber])
+  @@index([clientType])
+  @@index([organizationId])
+  @@index([ownerId])
+  @@index([isActive])
+  @@index([deletedAt])
+  @@map("clients")
+}
+
+model Address {
+  id            String      @id @default(uuid())
+  
+  label         String?     
+  addressType   AddressType @map("address_type")
+  
+  street        String
+  streetNumber  String?     @map("street_number")
+  floor         String?
+  apartment     String?
+  city          String
+  state         String      
+  postalCode    String?     @map("postal_code")
+  country       String      @default("Argentina")
+  
+  isDefault     Boolean     @default(false) @map("is_default")
+  isActive      Boolean     @default(true) @map("is_active")
+  deletedAt     DateTime?   @map("deleted_at")
+  
+  // Polymorphic relations
+  clientId      String?     @map("client_id")
+  
+  // Audit
+  createdById   String      @map("created_by_id")
+  updatedById   String?     @map("updated_by_id")
+  createdAt     DateTime    @default(now()) @map("created_at")
+  updatedAt     DateTime    @updatedAt @map("updated_at")
+  
+  // Relations
+  client        Client?     @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  createdBy     User        @relation("AddressCreatedBy", fields: [createdById], references: [id])
+  updatedBy     User?       @relation("AddressUpdatedBy", fields: [updatedById], references: [id])
+  
+  @@index([clientId])
+  @@index([isActive])
+  @@index([deletedAt])
+  @@map("addresses")
+}
+
+model Contact {
+  id            String      @id @default(uuid())
+  
+  name          String      
+  position      String?     
+  contactType   ContactType @map("contact_type")
+  
+  phoneMain     String?     @map("phone_main")
+  phoneSecondary String?    @map("phone_secondary")
+  phoneMobile   String?     @map("phone_mobile")
+  email         String?
+  
+  isDefault     Boolean     @default(false) @map("is_default")
+  isActive      Boolean     @default(true) @map("is_active")
+  deletedAt     DateTime?   @map("deleted_at")
+  notes         String?     @db.Text
+  
+  // Polymorphic relations
+  clientId      String?     @map("client_id")
+  
+  // Audit
+  createdById   String      @map("created_by_id")
+  updatedById   String?     @map("updated_by_id")
+  createdAt     DateTime    @default(now()) @map("created_at")
+  updatedAt     DateTime    @updatedAt @map("updated_at")
+  
+  // Relations
+  client        Client?     @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  createdBy     User        @relation("ContactCreatedBy", fields: [createdById], references: [id])
+  updatedBy     User?       @relation("ContactUpdatedBy", fields: [updatedById], references: [id])
+  
+  @@index([clientId])
+  @@index([isActive])
+  @@index([deletedAt])
+  @@map("contacts")
+}
+
+// ============================
+// CLIENT DOMAIN ENUMS
+// ============================
+
+enum ClientType {
+  INDIVIDUAL
+  COMPANY
+}
+
+enum IdType {
+  RUC
+  CEDULA
+  PASAPORTE
+}
+
+enum Sex {
+  MASCULINO
+  FEMENINO
+  OTRO
+}
+
+enum CompanySize {
+  MICRO      
+  PEQUENA      
+  MEDIANA     
+  GRANDE      
+}
+
+enum LegalStructure {
+  SA
+  SRL
+  SAS
+  COOPERATIVA
+  UNIPERSONAL
+  ONG
+  GUBERNAMENTAL
+}
+
+enum AddressType {
+  FISCAL
+  PARTICULAR
+  LABORAL
+  RIESGO
+  CORRESPONDENCIA
+  SINIESTRO
+  INSPECCION
+  COBRANZA
+}
+
+enum ContactType {
+  TITULAR
+  ASEGURADO
+  BENEFICIARIO
+  PAGADOR
+  EMERGENCIA
+  SINIESTROS
+  COBRANZA
+  COMERCIAL
+  TECNICO
+  APODERADO
+}

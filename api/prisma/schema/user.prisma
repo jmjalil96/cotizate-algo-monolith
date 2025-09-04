@@ -1,0 +1,71 @@
+// User management models
+
+model Organization {
+  id        String    @id @default(cuid())
+  name      String
+  slug      String    @unique
+  deletedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  users User[]
+  roles Role[]
+  auditLogs AuditLog[]
+  otpSessions OtpSession[]
+  clients Client[]
+
+  @@map("organizations")
+}
+
+model User {
+  id             String        @id @default(cuid())
+  email          String        @unique
+  password       String
+  verified       Boolean       @default(false)
+  verifiedAt     DateTime?
+  organizationId String
+  organization   Organization  @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  
+  // MFA fields
+  mfaSecret      String?       // Base32 encoded TOTP secret
+  mfaEnabled     Boolean       @default(false)
+  mfaBackupCodes Json?         // Array of hashed backup codes
+  
+  deletedAt      DateTime?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  profile        Profile?
+  roles          UserRole[]
+  auditLogs      AuditLog[]
+  otpSessions    OtpSession[]
+  otpAttempts    OtpAttempt[]
+  
+  // Client relations
+  ownedClients   Client[]      @relation("ClientOwner")
+  createdClients Client[]      @relation("ClientCreatedBy")
+  updatedClients Client[]      @relation("ClientUpdatedBy")
+  
+  // Address relations
+  createdAddresses Address[]   @relation("AddressCreatedBy")
+  updatedAddresses Address[]   @relation("AddressUpdatedBy")
+  
+  // Contact relations
+  createdContacts Contact[]    @relation("ContactCreatedBy")
+  updatedContacts Contact[]    @relation("ContactUpdatedBy")
+
+  @@map("users")
+}
+
+model Profile {
+  id          String    @id @default(cuid())
+  userId      String    @unique
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  firstName   String
+  lastName    String
+  mobilePhone String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@map("profiles")
+}

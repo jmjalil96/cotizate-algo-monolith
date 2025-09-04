@@ -1,0 +1,15 @@
+{
+  "name": "cotizate-algo-monolith",
+  "version": "1.0.0",
+  "description": "Cotizate Algo Monorepo",
+  "private": true,
+  "scripts": {
+    "db:up": "docker compose up -d",
+    "db:down": "docker compose down",
+    "db:reset": "docker compose down -v && docker compose up -d",
+    "db:logs": "docker compose logs -f postgres"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}

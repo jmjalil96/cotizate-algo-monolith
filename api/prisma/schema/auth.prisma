@@ -1,0 +1,107 @@
+// Authentication and authorization related models
+
+enum OtpPurpose {
+  PASSWORD_RESET
+  EMAIL_VERIFICATION
+}
+
+enum OtpChannel {
+  EMAIL
+  SMS
+}
+
+enum AttemptStatus {
+  SUCCESS
+  FAILURE
+  EXPIRED
+  LOCKED
+}
+
+// Aggregates attempts/resends/locking for a single flow
+model OtpSession {
+  id              String        @id @default(cuid())
+  userId          String?
+  user            User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+  organizationId  String?
+  organization    Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+
+  email           String
+  purpose         OtpPurpose
+  channel         OtpChannel
+
+  attemptCount    Int           @default(0)
+  maxAttempts     Int           @default(5)
+  resendCount     Int           @default(0)
+  lastAttemptAt   DateTime?
+  lastSentAt      DateTime?
+  lockUntil       DateTime?
+  expiresAt       DateTime
+  active          Boolean       @default(true)
+
+  ipAddress       String?
+  userAgent       String?
+  metadata        Json?
+
+  tokens          OtpToken[]
+  attempts        OtpAttempt[]
+
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([userId, purpose, active])
+  @@index([email, purpose, active])
+  @@index([expiresAt])
+  @@index([lockUntil])
+  @@map("otp_sessions")
+}
+
+// Individual codes/tokens; can rotate within a session
+model OtpToken {
+  id         String      @id @default(cuid())
+  sessionId  String
+  session    OtpSession  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  codeHash   String?     // hash of short numeric code
+  tokenHash  String?     // hash of long URL token
+  codeLength Int?
+  expiresAt  DateTime
+  consumedAt DateTime?
+
+  attempts   OtpAttempt[]
+
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+
+  @@index([tokenHash])
+  @@index([codeHash])
+  @@index([sessionId, consumedAt])
+  @@index([expiresAt])
+  @@map("otp_tokens")
+}
+
+// Optional detailed audit of each verification attempt
+model OtpAttempt {
+  id            String        @id @default(cuid())
+  sessionId     String
+  session       OtpSession    @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  tokenId       String?
+  token         OtpToken?     @relation(fields: [tokenId], references: [id], onDelete: SetNull)
+
+  userId        String?
+  user          User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  email         String
+  purpose       OtpPurpose
+  status        AttemptStatus
+  reason        String?       // e.g., "INVALID_CODE", "TOO_MANY_ATTEMPTS"
+
+  ipAddress     String?
+  userAgent     String?
+
+  createdAt     DateTime      @default(now())
+
+  @@index([userId, purpose, createdAt])
+  @@index([email, purpose, createdAt])
+  @@index([tokenId])
+  @@map("otp_attempts")
+}

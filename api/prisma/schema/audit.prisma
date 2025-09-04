@@ -1,0 +1,38 @@
+// Audit and compliance models
+
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+  LOGIN
+  LOGOUT
+  EXPORT
+  IMPORT
+  ACCESS
+  PERMISSION_CHANGE
+}
+
+model AuditLog {
+  id             String      @id @default(cuid())
+  userId         String
+  user           User        @relation(fields: [userId], references: [id], onDelete: Restrict)
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  action         AuditAction
+  resource       String      // e.g., "users", "quotes", "roles"
+  resourceId     String?     // ID of the affected resource
+  ipAddress      String?
+  userAgent      String?
+  before         Json?       // Previous state (for updates)
+  after          Json?       // New state (for creates/updates)
+  metadata       Json?       // Additional context (e.g., reason, notes)
+  createdAt      DateTime    @default(now())
+
+  @@index([userId])
+  @@index([organizationId])
+  @@index([resource])
+  @@index([resourceId])
+  @@index([action])
+  @@index([createdAt])
+  @@map("audit_logs")
+}

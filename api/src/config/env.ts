@@ -31,6 +31,9 @@ const envSchema = z.object({
 		.default("true")
 		.transform((val) => val === "true"),
 	COMPRESSION_THRESHOLD: z.string().default("1kb"),
+	// Database
+	DATABASE_URL: z.string().url(),
+	SHADOW_DATABASE_URL: z.string().url().optional(),
 });
 
 const parsedEnv = envSchema.safeParse(process.env);
