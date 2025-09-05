@@ -1,4 +1,5 @@
 import compression from "compression";
+import cookieParser from "cookie-parser";
 import cors from "cors";
 import type { RequestHandler } from "express";
 import express from "express";
@@ -68,11 +69,15 @@ const compressionConfig = compression({
 	level: 6, // Balanced compression level
 });
 
+// Cookie parser configuration
+const cookieParserConfig = cookieParser(); // No secret needed - we hash our own tokens
+
 // Export individual middleware for flexibility
 export const security = {
 	compression: compressionConfig,
 	cors: cors(corsOptions),
 	helmet: helmetConfig,
+	cookieParser: cookieParserConfig,
 	rateLimit: rateLimiter,
 	jsonParser,
 	urlEncodedParser,
@@ -83,6 +88,7 @@ export const applySecurity = [
 	security.compression, // Compress response first
 	security.helmet,
 	security.cors,
+	security.cookieParser, // Parse cookies before rate limiting
 	security.rateLimit,
 	security.jsonParser,
 	security.urlEncodedParser,

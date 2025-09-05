@@ -1,6 +1,6 @@
 import type { PrismaClient } from "@prisma/client";
 import type { Response } from "express";
-import { logger } from "../../../../config/logger.js";
+import type { Logger } from "../../../../config/logger.js";
 import { AppError } from "../../../../shared/errors/AppError.js";
 import { createSession } from "../../shared/repositories/session.repository.js";
 import {
@@ -61,28 +61,17 @@ export class LoginService {
 	 * 10. Create audit log for successful login
 	 * 11. Return user data and session info
 	 */
-	async login(loginData: LoginInput, res: Response): Promise<LoginResult> {
-		const { email, password, ipAddress, userAgent, requestId } = loginData;
-
-		// Log login attempt
-		logger.info(
-			{
-				email: email,
-				ipAddress,
-				requestId,
-			},
-			"Login attempt",
-		);
+	async login(loginData: LoginInput, res: Response, logger?: Logger): Promise<LoginResult> {
+		const { email, password, ipAddress, userAgent } = loginData;
 
 		try {
 			// STEP 1 - Find user by email with complete context (normalizes internally)
 			const user = await findUserForLogin(this.prisma, email);
 			if (!user) {
-				logger.warn(
+				logger?.warn(
 					{
 						email: email,
 						ipAddress,
-						requestId,
 					},
 					"Login failed - user not found",
 				);
@@ -91,12 +80,11 @@ export class LoginService {
 
 			// STEP 2 - Check user verification status
 			if (!user.verified) {
-				logger.warn(
+				logger?.warn(
 					{
 						userId: user.id,
 						email: email,
 						ipAddress,
-						requestId,
 					},
 					"Login failed - account not verified",
 				);
@@ -105,13 +93,12 @@ export class LoginService {
 
 			// STEP 3 - Check account lock status
 			if (user.isLocked) {
-				logger.warn(
+				logger?.warn(
 					{
 						userId: user.id,
 						email: email,
 						loginAttempts: user.loginAttempts,
 						ipAddress,
-						requestId,
 					},
 					"Login failed - account locked",
 				);
@@ -120,13 +107,12 @@ export class LoginService {
 
 			// STEP 4 - Check organization status
 			if (user.organization.deletedAt) {
-				logger.warn(
+				logger?.warn(
 					{
 						userId: user.id,
 						email: email,
 						organizationId: user.organizationId,
 						ipAddress,
-						requestId,
 					},
 					"Login failed - organization inactive",
 				);
@@ -153,18 +139,16 @@ export class LoginService {
 							email: email,
 							reason: "INVALID_PASSWORD",
 							attempts: user.loginAttempts + 1,
-							requestId,
 						},
 					},
 				});
 
-				logger.warn(
+				logger?.warn(
 					{
 						userId: user.id,
 						email: email,
 						loginAttempts: user.loginAttempts + 1,
 						ipAddress,
-						requestId,
 					},
 					"Login failed - invalid password",
 				);
@@ -208,7 +192,6 @@ export class LoginService {
 							email: email,
 							sessionId: session.id,
 							deviceInfo: { ipAddress, userAgent },
-							requestId,
 						},
 					},
 				});
@@ -245,7 +228,7 @@ export class LoginService {
 			});
 
 			// Log successful login
-			logger.info(
+			logger?.info(
 				{
 					userId: user.id,
 					email: email,
@@ -253,7 +236,6 @@ export class LoginService {
 					sessionId: result.session.id,
 					permissions: result.user.permissions,
 					ipAddress,
-					requestId,
 				},
 				"Login completed successfully",
 			);
@@ -262,11 +244,10 @@ export class LoginService {
 		} catch (error) {
 			// Log internal errors (but not expected business errors)
 			if (!(error instanceof AppError)) {
-				logger.error(
+				logger?.error(
 					{
 						email: email,
 						ipAddress,
-						requestId,
 						error: error instanceof Error ? error.message : String(error),
 					},
 					"Internal error during login",

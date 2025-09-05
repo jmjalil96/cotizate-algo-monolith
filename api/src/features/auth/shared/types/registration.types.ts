@@ -22,14 +22,12 @@ export interface RegisterInput {
 	// Request context (from middleware)
 	ipAddress: string;
 	userAgent: string;
-	requestId: string;
 }
 
 /**
  * What the service returns to the controller
  */
 export interface RegisterResult {
-	sessionToken: string;
 	otpExpiresAt: Date;
 }
 
@@ -44,7 +42,6 @@ export interface VerifyEmailInput {
 	// Request context (from middleware)
 	ipAddress: string;
 	userAgent: string;
-	requestId: string;
 }
 
 /**
@@ -65,7 +62,6 @@ export interface ResendInput {
 	// Request context (from middleware)
 	ipAddress: string;
 	userAgent: string;
-	requestId: string;
 }
 
 /**
@@ -75,8 +71,6 @@ export interface ResendResult {
 	success: boolean;
 	message: string;
 	otpExpiresAt?: Date; // When new OTP expires (success case)
-	waitSeconds?: number; // Seconds to wait (rate limit case)
-	retryAfter?: Date; // When can retry (lock case)
 	newSessionId?: string; // New session ID (for internal logging only)
 }
 
@@ -91,7 +85,6 @@ export interface LoginInput {
 	// Request context (from middleware)
 	ipAddress: string;
 	userAgent: string;
-	requestId: string;
 }
 
 /**
@@ -121,4 +114,25 @@ export interface LoginResult {
 		lastActivity: Date;
 		tokenLastFour: string;
 	};
+}
+
+/**
+ * What the logout service receives from the controller (after DTO validation)
+ */
+export interface LogoutInput {
+	// From DTO
+	everywhere?: boolean; // Optional bulk logout flag
+
+	// Request context (from middleware)
+	ipAddress: string;
+	userAgent: string;
+}
+
+/**
+ * What the logout service returns to the controller
+ */
+export interface LogoutResult {
+	success: boolean; // Always true (idempotent design)
+	message: string; // User-friendly message
+	sessionsRevoked: number; // Count of sessions terminated
 }

@@ -3,6 +3,7 @@ import { EmailVerificationService } from "../../domain/registration/emailVerific
 import { RegisterService } from "../../domain/registration/register.service.js";
 import { ResendService } from "../../domain/registration/resend.service.js";
 import { LoginService } from "../../domain/session/login.service.js";
+import { LogoutService } from "../../domain/session/logout.service.js";
 
 /**
  * Auth Services Interface
@@ -13,6 +14,7 @@ export interface AuthServices {
 	emailVerificationService: EmailVerificationService;
 	resendService: ResendService;
 	loginService: LoginService;
+	logoutService: LogoutService;
 	// Future services can be added here:
 	// passwordResetService: PasswordResetService;
 }
@@ -29,6 +31,7 @@ export function createAuthServices(prisma: PrismaClient): AuthServices {
 		emailVerificationService: new EmailVerificationService(prisma),
 		resendService: new ResendService(prisma),
 		loginService: new LoginService(prisma),
+		logoutService: new LogoutService(prisma),
 		// Future services initialization:
 		// passwordResetService: new PasswordResetService(prisma),
 	};
@@ -46,5 +49,6 @@ export function createMockAuthServices(overrides?: Partial<AuthServices>): AuthS
 			overrides?.emailVerificationService || ({} as EmailVerificationService),
 		resendService: overrides?.resendService || ({} as ResendService),
 		loginService: overrides?.loginService || ({} as LoginService),
+		logoutService: overrides?.logoutService || ({} as LogoutService),
 	};
 }

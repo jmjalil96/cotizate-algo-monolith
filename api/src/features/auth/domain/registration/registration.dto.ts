@@ -75,7 +75,6 @@ export const resendCodeRequestSchema = z.object({
  * POST /register response body (201 Created)
  */
 export const registerResponseSchema = z.object({
-	sessionToken: z.string().uuid(),
 	otpExpiresAt: z.string().datetime(),
 });
 
@@ -94,8 +93,6 @@ export const resendCodeResponseSchema = z.object({
 	success: z.boolean(),
 	message: z.string(),
 	otpExpiresAt: z.string().datetime().optional(),
-	waitSeconds: z.number().int().min(0).optional(),
-	retryAfter: z.string().datetime().optional(),
 });
 
 // ============================================

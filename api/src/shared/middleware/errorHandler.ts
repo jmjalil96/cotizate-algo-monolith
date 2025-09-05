@@ -49,6 +49,15 @@ export const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
 
 	// Handle AppError
 	if (err instanceof AppError) {
+		// Set Retry-After header for rate limiting responses
+		const metadata = err.metadata as { waitSeconds?: number; retryAfter?: string } | undefined;
+		if (metadata?.waitSeconds) {
+			res.set("Retry-After", String(metadata.waitSeconds));
+		}
+		if (metadata?.retryAfter) {
+			res.set("Retry-After", String(metadata.retryAfter));
+		}
+
 		// Check if this is a validation error with issues attached
 		const validationError = err as AppError & { issues?: unknown };
 		return res.status(err.statusCode).json({

@@ -24,6 +24,9 @@ export const SESSION_EXPIRY_DAYS = 30;
 export const SESSION_TOKEN_BYTES = 32;
 export const AUTH_COOKIE_NAME = "sessionToken";
 
+// Session activity tracking
+export const SESSION_ACTIVITY_UPDATE_THRESHOLD_MINUTES = 5;
+
 // Slug generation
 export const SLUG_MAX_ATTEMPTS = 5;
 export const SLUG_RANDOM_SUFFIX_LENGTH = 4;

@@ -37,13 +37,16 @@ export const verificationSessionExpired = () =>
  * Path 3: Session locked due to too many failed attempts
  * User must wait for cooldown period before retrying
  */
-export const verificationSessionLocked = (retryAfter: Date) =>
-	new AppError(
-		`Too many failed attempts. Try again at ${retryAfter.toISOString()}.`,
+export const verificationSessionLocked = (retryAfter: Date) => {
+	const waitSeconds = Math.max(0, Math.ceil((retryAfter.getTime() - Date.now()) / 1000));
+	return new AppError(
+		`Too many failed attempts. Try again in ${waitSeconds} seconds.`,
 		429,
 		true,
 		"SESSION_LOCKED",
+		{ waitSeconds },
 	);
+};
 
 /**
  * Path 4: No valid verification tokens available
@@ -115,4 +118,5 @@ export const resendRateLimited = (waitSeconds: number) =>
 		429,
 		true,
 		"RESEND_RATE_LIMITED",
+		{ waitSeconds },
 	);

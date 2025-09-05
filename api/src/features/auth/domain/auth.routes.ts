@@ -10,7 +10,7 @@ import {
 	verifyEmailRequestSchema,
 } from "./registration/registration.dto.js";
 import { SessionController } from "./session/session.controller.js";
-import { loginRequestSchema } from "./session/session.dto.js";
+import { loginRequestSchema, logoutRequestSchema } from "./session/session.dto.js";
 
 /**
  * Auth Routes
@@ -35,7 +35,6 @@ const sessionController = new SessionController(authServices);
  * - organizationName: string
  *
  * Response 201:
- * - sessionToken: string (UUID for OTP verification)
  * - otpExpiresAt: string (ISO date when OTP expires)
  *
  * Error responses:
@@ -88,13 +87,11 @@ router.post(
  * Response 200:
  * - success: boolean
  * - message: string
- * - otpExpiresAt: string (optional - when new OTP expires)
- * - waitSeconds: number (optional - seconds to wait on rate limit)
- * - retryAfter: string (optional - when can retry if locked)
+ * - otpExpiresAt: string (when new OTP sent)
  *
  * Error responses:
  * - 400: No session, too many resends, etc.
- * - 429: Rate limited or session locked
+ * - 429: Rate limited (with Retry-After header) or session locked (with Retry-After header)
  * - 500: Internal server error
  */
 router.post(
@@ -131,6 +128,31 @@ router.post(
 	validate({ body: loginRequestSchema }),
 	asyncHandler(async (req, res) => {
 		await sessionController.login(req, res);
+	}),
+);
+
+/**
+ * POST /api/v1/auth/logout
+ * Terminate user session(s) and clear cookie
+ *
+ * Request body:
+ * - everywhere: boolean (optional - if true, revoke all user sessions)
+ *
+ * Response 200:
+ * - success: boolean (always true - idempotent)
+ * - message: string
+ * - sessionsRevoked: number (count of sessions terminated)
+ *
+ * Clears HTTP-only cookie: sessionToken
+ * Always returns 200 (idempotent design)
+ *
+ * Note: No error responses - logout always succeeds for security
+ */
+router.post(
+	"/logout",
+	validate({ body: logoutRequestSchema }),
+	asyncHandler(async (req, res) => {
+		await sessionController.logout(req, res);
 	}),
 );
 

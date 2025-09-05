@@ -138,3 +138,34 @@ export async function revokeUserSessions(
 
 	return result.count;
 }
+
+/**
+ * Find session by token hash with minimal data for authentication middleware
+ * Optimized query for performance - only loads essential auth validation fields
+ * @param prisma - Prisma client instance
+ * @param tokenHash - SHA256 hash of session token
+ * @returns Session with minimal user and organization data or null if not found
+ */
+export async function findSessionForAuth(
+	prisma: PrismaClient | Prisma.TransactionClient,
+	tokenHash: string,
+) {
+	return prisma.session.findUnique({
+		where: { tokenHash },
+		include: {
+			user: {
+				select: {
+					id: true,
+					verified: true,
+					isLocked: true,
+				},
+			},
+			organization: {
+				select: {
+					id: true,
+					deletedAt: true,
+				},
+			},
+		},
+	});
+}

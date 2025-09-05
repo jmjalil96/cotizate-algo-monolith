@@ -4,6 +4,7 @@ export class AppError extends Error {
 		public statusCode: number = 500,
 		public isOperational: boolean = true,
 		public code?: string,
+		public metadata?: Record<string, unknown>,
 	) {
 		super(message);
 		Object.setPrototypeOf(this, AppError.prototype);

@@ -1,6 +1,5 @@
-import { randomUUID } from "node:crypto";
 import type { PrismaClient } from "@prisma/client";
-import { logger } from "../../../../config/logger.js";
+import type { Logger } from "../../../../config/logger.js";
 import { AppError, conflict, emailNotVerified } from "../../../../shared/errors/AppError.js";
 import { createOrganization } from "../../shared/repositories/organization.repository.js";
 import { createOtpSession, createOtpToken } from "../../shared/repositories/otp.repository.js";
@@ -24,20 +23,10 @@ export class RegisterService {
 	/**
 	 * Main registration method - orchestrates the entire registration flow
 	 * @param registrationData - User registration input data
+	 * @param logger - Request-scoped logger for tracing
 	 * @returns Registration result with user info and next steps
 	 */
-	async register(registrationData: RegisterInput): Promise<RegisterResult> {
-		// Log registration attempt
-		logger.info(
-			{
-				email: registrationData.email,
-				organizationName: registrationData.organizationName,
-				ipAddress: registrationData.ipAddress,
-				requestId: registrationData.requestId,
-			},
-			"Registration attempt",
-		);
-
+	async register(registrationData: RegisterInput, logger?: Logger): Promise<RegisterResult> {
 		try {
 			// Check email availability and verification status first (outside transaction for early exit)
 			const existingUser = await getUserByEmail(this.prisma, registrationData.email);
@@ -50,9 +39,6 @@ export class RegisterService {
 
 			// Hash password before transaction
 			const passwordHash = await hashPassword(registrationData.password);
-
-			// Generate session token for OTP verification
-			const sessionToken = randomUUID();
 
 			// Execute registration in transaction
 			const result = await this.prisma.$transaction(async (tx) => {
@@ -110,7 +96,7 @@ export class RegisterService {
 				});
 
 				// Log successful registration
-				logger.info(
+				logger?.info(
 					{
 						userId: user.id,
 						organizationId: organization.id,
@@ -120,7 +106,6 @@ export class RegisterService {
 				);
 
 				return {
-					sessionToken,
 					otpExpiresAt: otpToken.expiresAt,
 				};
 			});
@@ -129,11 +114,10 @@ export class RegisterService {
 		} catch (error) {
 			// Log internal errors (but not expected business errors)
 			if (!(error instanceof AppError)) {
-				logger.error(
+				logger?.error(
 					{
 						email: registrationData.email,
 						ipAddress: registrationData.ipAddress,
-						requestId: registrationData.requestId,
 						error: error instanceof Error ? error.message : String(error),
 					},
 					"Internal error during registration",

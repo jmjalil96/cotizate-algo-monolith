@@ -1,5 +1,5 @@
 import type { PrismaClient } from "@prisma/client";
-import { logger } from "../../../../config/logger.js";
+import type { Logger } from "../../../../config/logger.js";
 import { AppError } from "../../../../shared/errors/AppError.js";
 import {
 	createOtpAttempt,
@@ -51,28 +51,20 @@ export class EmailVerificationService {
 	 * 7. Correct OTP code → SUCCESS + mark consumed + verify user + audit log
 	 */
 	// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Complex 7-path verification logic required for security
-	async verifyEmail(verificationData: VerifyEmailInput): Promise<VerifyEmailResult> {
-		const { email, otpCode, ipAddress, userAgent, requestId } = verificationData;
-
-		// Log verification attempt
-		logger.info(
-			{
-				email,
-				ipAddress,
-				requestId,
-			},
-			"Email verification attempt",
-		);
+	async verifyEmail(
+		verificationData: VerifyEmailInput,
+		logger?: Logger,
+	): Promise<VerifyEmailResult> {
+		const { email, otpCode, ipAddress, userAgent } = verificationData;
 
 		try {
 			// EARLY EXIT OPTIMIZATION: Check if user already verified
 			const existingUser = await getUserByEmail(this.prisma, email);
 			if (existingUser?.verified) {
-				logger.info(
+				logger?.info(
 					{
 						userId: existingUser.id,
 						email: email,
-						requestId,
 					},
 					"User already verified - returning success",
 				);
@@ -86,11 +78,10 @@ export class EmailVerificationService {
 			// PATH 1: Find active verification session
 			const session = await findActiveOtpSession(this.prisma, email);
 			if (!session) {
-				logger.warn(
+				logger?.warn(
 					{
 						email: email,
 						ipAddress,
-						requestId,
 					},
 					"No active verification session found",
 				);
@@ -101,12 +92,11 @@ export class EmailVerificationService {
 
 			// PATH 2: Validate session expiry (24 hour window)
 			if (session.expiresAt < now) {
-				logger.warn(
+				logger?.warn(
 					{
 						email: email,
 						sessionId: session.id,
 						expiresAt: session.expiresAt,
-						requestId,
 					},
 					"Verification session expired",
 				);
@@ -115,12 +105,11 @@ export class EmailVerificationService {
 
 			// PATH 3: Check session lock status (rate limiting)
 			if (session.lockUntil && session.lockUntil > now) {
-				logger.warn(
+				logger?.warn(
 					{
 						email: email,
 						sessionId: session.id,
 						lockUntil: session.lockUntil,
-						requestId,
 					},
 					"Verification session locked",
 				);
@@ -130,11 +119,10 @@ export class EmailVerificationService {
 			// PATH 4: Find valid unconsumed token
 			const tokens = await findUnconsumedOtpTokens(this.prisma, session.id);
 			if (tokens.length === 0) {
-				logger.warn(
+				logger?.warn(
 					{
 						email: email,
 						sessionId: session.id,
-						requestId,
 					},
 					"No valid verification codes available",
 				);
@@ -150,13 +138,12 @@ export class EmailVerificationService {
 
 			// PATH 5: Validate token expiry (15 minute window)
 			if (token.expiresAt < now) {
-				logger.warn(
+				logger?.warn(
 					{
 						email: email,
 						sessionId: session.id,
 						tokenId: token.id,
 						expiresAt: token.expiresAt,
-						requestId,
 					},
 					"Verification code expired",
 				);
@@ -191,7 +178,7 @@ export class EmailVerificationService {
 					updatedSession.maxAttempts - updatedSession.attemptCount,
 				);
 
-				logger.warn(
+				logger?.warn(
 					{
 						email: email,
 						sessionId: session.id,
@@ -199,7 +186,6 @@ export class EmailVerificationService {
 						attemptCount: updatedSession.attemptCount,
 						attemptsRemaining,
 						locked: !!updatedSession.lockUntil,
-						requestId,
 					},
 					"Invalid verification code provided",
 				);
@@ -249,7 +235,6 @@ export class EmailVerificationService {
 							email: email,
 							sessionId: session.id,
 							tokenId: token.id,
-							requestId,
 						},
 					},
 				});
@@ -261,14 +246,13 @@ export class EmailVerificationService {
 			});
 
 			// Log successful verification
-			logger.info(
+			logger?.info(
 				{
 					userId: session.userId,
 					organizationId: session.organizationId,
 					email: email,
 					sessionId: session.id,
 					tokenId: token.id,
-					requestId,
 				},
 				"Email verification completed successfully",
 			);
@@ -277,11 +261,10 @@ export class EmailVerificationService {
 		} catch (error) {
 			// Log internal errors (but not expected business errors)
 			if (!(error instanceof AppError)) {
-				logger.error(
+				logger?.error(
 					{
 						email: email,
 						ipAddress,
-						requestId,
 						error: error instanceof Error ? error.message : String(error),
 					},
 					"Internal error during email verification",

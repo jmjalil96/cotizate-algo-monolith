@@ -20,6 +20,13 @@ export const loginRequestSchema = z.object({
 		.max(128, "Password must be less than 128 characters"),
 });
 
+/**
+ * POST /logout request body validation
+ */
+export const logoutRequestSchema = z.object({
+	everywhere: z.boolean().optional(),
+});
+
 // ============================================
 // RESPONSE SCHEMA
 // ============================================
@@ -53,9 +60,20 @@ export const loginResponseSchema = z.object({
 	}),
 });
 
+/**
+ * POST /logout response body (200 OK)
+ */
+export const logoutResponseSchema = z.object({
+	success: z.boolean(),
+	message: z.string(),
+	sessionsRevoked: z.number().int().min(0),
+});
+
 // ============================================
 // TYPE EXPORTS
 // ============================================
 
 export type LoginRequestDto = z.infer<typeof loginRequestSchema>;
 export type LoginResponseDto = z.infer<typeof loginResponseSchema>;
+export type LogoutRequestDto = z.infer<typeof logoutRequestSchema>;
+export type LogoutResponseDto = z.infer<typeof logoutResponseSchema>;

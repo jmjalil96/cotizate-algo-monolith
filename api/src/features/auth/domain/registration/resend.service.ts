@@ -1,5 +1,5 @@
 import type { PrismaClient } from "@prisma/client";
-import { logger } from "../../../../config/logger.js";
+import type { Logger } from "../../../../config/logger.js";
 import { AppError } from "../../../../shared/errors/AppError.js";
 import {
 	MAX_RESENDS,
@@ -59,29 +59,18 @@ export class ResendService {
 	 * 7. Valid resend → TOKEN ROTATION (invalidate old tokens + create new in same session)
 	 */
 	// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Complex 7-path verification logic required for security
-	async resendCode(resendData: ResendInput): Promise<ResendResult> {
-		const { email, ipAddress, userAgent, requestId } = resendData;
-
-		// Log resend attempt
-		logger.info(
-			{
-				email,
-				ipAddress,
-				requestId,
-			},
-			"OTP resend attempt",
-		);
+	async resendCode(resendData: ResendInput, logger?: Logger): Promise<ResendResult> {
+		const { email, ipAddress, userAgent } = resendData;
 
 		try {
 			// GLOBAL RATE LIMITING CHECK - prevents circumventing locks via new sessions
 			const activeLock = await findSessionsWithActiveLocks(this.prisma, email);
 			if (activeLock) {
-				logger.warn(
+				logger?.warn(
 					{
 						email: email,
 						sessionId: activeLock.id,
 						lockUntil: activeLock.lockUntil,
-						requestId,
 					},
 					"Resend blocked by active session lock",
 				);
@@ -94,11 +83,10 @@ export class ResendService {
 			// PATH 6 EARLY EXIT - Check if user already verified (optimization)
 			const existingUser = await getUserByEmail(this.prisma, email);
 			if (existingUser?.verified) {
-				logger.info(
+				logger?.info(
 					{
 						userId: existingUser.id,
 						email: email,
-						requestId,
 					},
 					"User already verified - resend no-op",
 				);
@@ -112,11 +100,10 @@ export class ResendService {
 			// PATH 1 - Find any session for email (active or inactive)
 			const session = await findAnyOtpSession(this.prisma, email);
 			if (!session) {
-				logger.warn(
+				logger?.warn(
 					{
 						email: email,
 						ipAddress,
-						requestId,
 					},
 					"No verification session found for resend",
 				);
@@ -127,21 +114,24 @@ export class ResendService {
 
 			// PATH 2 - Handle expired session (>24h) - Create replacement session
 			if (session.expiresAt < now) {
-				logger.info(
+				logger?.info(
 					{
 						email: email,
 						sessionId: session.id,
 						expiresAt: session.expiresAt,
-						requestId,
 					},
 					"Creating replacement session for expired session",
 				);
 
-				const result = await this.createReplacementSession(session, email, {
-					ipAddress,
-					userAgent,
-					requestId,
-				});
+				const result = await this.createReplacementSession(
+					session,
+					email,
+					{
+						ipAddress,
+						userAgent,
+					},
+					logger,
+				);
 
 				return result;
 			}
@@ -150,12 +140,11 @@ export class ResendService {
 
 			// PATH 3 - Check active session lock status
 			if (session.lockUntil && session.lockUntil > now) {
-				logger.warn(
+				logger?.warn(
 					{
 						email: email,
 						sessionId: session.id,
 						lockUntil: session.lockUntil,
-						requestId,
 					},
 					"Active session is locked",
 				);
@@ -164,13 +153,12 @@ export class ResendService {
 
 			// PATH 4 - Check resend count limits (abuse prevention)
 			if (session.resendCount >= MAX_RESENDS) {
-				logger.warn(
+				logger?.warn(
 					{
 						email: email,
 						sessionId: session.id,
 						resendCount: session.resendCount,
 						maxResends: MAX_RESENDS,
-						requestId,
 					},
 					"Too many resend attempts for session",
 				);
@@ -185,13 +173,12 @@ export class ResendService {
 				if (timeSinceLastSend < cooldownMs) {
 					const waitSeconds = Math.ceil((cooldownMs - timeSinceLastSend) / 1000);
 
-					logger.warn(
+					logger?.warn(
 						{
 							email: email,
 							sessionId: session.id,
 							timeSinceLastSend: timeSinceLastSend,
 							waitSeconds,
-							requestId,
 						},
 						"Resend rate limited",
 					);
@@ -201,22 +188,24 @@ export class ResendService {
 			}
 
 			// PATH 7 - Valid resend (token rotation in same session)
-			const result = await this.rotateTokenInSession(session, {
-				email: email,
-				ipAddress,
-				userAgent,
-				requestId,
-			});
+			const result = await this.rotateTokenInSession(
+				session,
+				{
+					email: email,
+					ipAddress,
+					userAgent,
+				},
+				logger,
+			);
 
 			return result;
 		} catch (error) {
 			// Log internal errors (but not expected business errors)
 			if (!(error instanceof AppError)) {
-				logger.error(
+				logger?.error(
 					{
 						email: email,
 						ipAddress,
-						requestId,
 						error: error instanceof Error ? error.message : String(error),
 					},
 					"Internal error during OTP resend",
@@ -239,9 +228,10 @@ export class ResendService {
 	private async createReplacementSession(
 		oldSession: OtpSessionWithUser,
 		email: string,
-		requestContext: { ipAddress: string; userAgent: string; requestId: string },
+		requestContext: { ipAddress: string; userAgent: string },
+		logger?: Logger,
 	): Promise<ResendResult> {
-		const { ipAddress, userAgent, requestId } = requestContext;
+		const { ipAddress, userAgent } = requestContext;
 
 		// Execute session replacement in transaction
 		const result = await this.prisma.$transaction(async (tx) => {
@@ -283,7 +273,6 @@ export class ResendService {
 						oldSessionId: oldSession.id,
 						newSessionId: newSession.id,
 						reason: "SESSION_EXPIRED",
-						requestId,
 					},
 				},
 			});
@@ -300,12 +289,11 @@ export class ResendService {
 		});
 
 		// Log successful session replacement
-		logger.info(
+		logger?.info(
 			{
 				email: email,
 				oldSessionId: oldSession.id,
 				newSessionId: result.newSessionId, // Use actual session ID
-				requestId,
 			},
 			"OTP session replacement completed",
 		);
@@ -322,9 +310,10 @@ export class ResendService {
 	 */
 	private async rotateTokenInSession(
 		session: OtpSessionWithUser,
-		requestContext: { email: string; ipAddress: string; userAgent: string; requestId: string },
+		requestContext: { email: string; ipAddress: string; userAgent: string },
+		logger?: Logger,
 	): Promise<ResendResult> {
-		const { email, ipAddress, userAgent, requestId } = requestContext;
+		const { email, ipAddress, userAgent } = requestContext;
 
 		// Execute token rotation in transaction
 		const result = await this.prisma.$transaction(async (tx) => {
@@ -363,12 +352,11 @@ export class ResendService {
 		});
 
 		// Log successful token rotation
-		logger.info(
+		logger?.info(
 			{
 				email: email,
 				sessionId: session.id,
 				resendCount: session.resendCount + 1,
-				requestId,
 			},
 			"OTP token rotation completed",
 		);

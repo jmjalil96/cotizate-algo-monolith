@@ -1,5 +1,4 @@
 import type { Request, Response } from "express";
-import { logger } from "../../../../config/logger.js";
 import { extractRequestContext } from "../../../../shared/utils/request.util.js";
 import type { AuthServices } from "../../shared/factories/auth.factory.js";
 import type {
@@ -29,39 +28,38 @@ export class RegistrationController {
 		const validated = res.locals.validated as { body: RegisterRequestDto };
 
 		// Extract request metadata for security and auditing
-		const { ipAddress, userAgent, requestId } = extractRequestContext(req);
+		const { ipAddress, userAgent } = extractRequestContext(req);
 
 		// Log registration attempt
-		logger.info(
+		req.log?.info(
 			{
 				email: validated.body.email,
 				organizationName: validated.body.organizationName,
 				ipAddress,
-				requestId,
 			},
 			"Registration attempt",
 		);
 
 		// Call service with combined data
-		const result = await this.services.registerService.register({
-			...validated.body,
-			ipAddress,
-			userAgent,
-			requestId,
-		});
+		const result = await this.services.registerService.register(
+			{
+				...validated.body,
+				ipAddress,
+				userAgent,
+			},
+			req.log,
+		);
 
 		// Log successful registration
-		logger.info(
+		req.log?.info(
 			{
 				email: validated.body.email,
-				requestId,
 			},
 			"Registration successful - OTP sent",
 		);
 
-		// Return success response with session token
+		// Return success response
 		res.status(201).json({
-			sessionToken: result.sessionToken,
 			otpExpiresAt: result.otpExpiresAt.toISOString(),
 		});
 	}
@@ -76,31 +74,31 @@ export class RegistrationController {
 		const validated = res.locals.validated as { body: VerifyEmailRequestDto };
 
 		// Extract request metadata for security and auditing
-		const { ipAddress, userAgent, requestId } = extractRequestContext(req);
+		const { ipAddress, userAgent } = extractRequestContext(req);
 
 		// Log verification attempt
-		logger.info(
+		req.log?.info(
 			{
 				email: validated.body.email,
 				ipAddress,
-				requestId,
 			},
 			"Email verification attempt",
 		);
 
 		// Call service with combined data
-		const result = await this.services.emailVerificationService.verifyEmail({
-			...validated.body,
-			ipAddress,
-			userAgent,
-			requestId,
-		});
+		const result = await this.services.emailVerificationService.verifyEmail(
+			{
+				...validated.body,
+				ipAddress,
+				userAgent,
+			},
+			req.log,
+		);
 
 		// Log successful verification
-		logger.info(
+		req.log?.info(
 			{
 				email: validated.body.email,
-				requestId,
 			},
 			"Email verification successful",
 		);
@@ -122,42 +120,40 @@ export class RegistrationController {
 		const validated = res.locals.validated as { body: ResendCodeRequestDto };
 
 		// Extract request metadata for security and auditing
-		const { ipAddress, userAgent, requestId } = extractRequestContext(req);
+		const { ipAddress, userAgent } = extractRequestContext(req);
 
 		// Log resend attempt
-		logger.info(
+		req.log?.info(
 			{
 				email: validated.body.email,
 				ipAddress,
-				requestId,
 			},
 			"OTP resend attempt",
 		);
 
 		// Call service with combined data
-		const result = await this.services.resendService.resendCode({
-			...validated.body,
-			ipAddress,
-			userAgent,
-			requestId,
-		});
+		const result = await this.services.resendService.resendCode(
+			{
+				...validated.body,
+				ipAddress,
+				userAgent,
+			},
+			req.log,
+		);
 
 		// Log successful resend
-		logger.info(
+		req.log?.info(
 			{
 				email: validated.body.email,
-				requestId,
 			},
 			"OTP resend successful",
 		);
 
-		// Return success response with optional fields
+		// Return success response
 		res.status(200).json({
 			success: result.success,
 			message: result.message,
 			...(result.otpExpiresAt && { otpExpiresAt: result.otpExpiresAt.toISOString() }),
-			...(result.waitSeconds !== undefined && { waitSeconds: result.waitSeconds }),
-			...(result.retryAfter && { retryAfter: result.retryAfter.toISOString() }),
 		});
 	}
 }
