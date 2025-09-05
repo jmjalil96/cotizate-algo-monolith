@@ -1,8 +1,10 @@
 import { Router } from "express";
 import { prisma } from "../../../db/client.js";
+import { authenticate } from "../../../shared/middleware/auth.middleware.js";
 import { validate } from "../../../shared/middleware/validator.js";
 import { asyncHandler } from "../../../shared/utils/asyncHandler.js";
 import { createAuthServices } from "../shared/factories/auth.factory.js";
+import { ProfileController } from "./profile/profile.controller.js";
 import { RegistrationController } from "./registration/registration.controller.js";
 import {
 	registerRequestSchema,
@@ -22,6 +24,7 @@ const router = Router();
 const authServices = createAuthServices(prisma);
 const registrationController = new RegistrationController(authServices);
 const sessionController = new SessionController(authServices);
+const profileController = new ProfileController(authServices);
 
 /**
  * POST /api/v1/auth/register
@@ -153,6 +156,29 @@ router.post(
 	validate({ body: logoutRequestSchema }),
 	asyncHandler(async (req, res) => {
 		await sessionController.logout(req, res);
+	}),
+);
+
+/**
+ * GET /api/v1/auth/me
+ * Get current user profile and session data
+ *
+ * Requires: Valid session token in HTTP-only cookie
+ *
+ * Response 200:
+ * - user: object (id, email, profile, organization, permissions)
+ * - session: object (id, expiresAt, lastActivity, tokenLastFour)
+ *
+ * Error responses:
+ * - 401: Authentication required (no valid session)
+ * - 404: User or session not found (data integrity issue)
+ * - 500: Internal server error
+ */
+router.get(
+	"/me",
+	authenticate,
+	asyncHandler(async (req, res) => {
+		await profileController.getMe(req, res);
 	}),
 );
 

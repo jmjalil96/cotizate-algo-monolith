@@ -136,3 +136,44 @@ export interface LogoutResult {
 	message: string; // User-friendly message
 	sessionsRevoked: number; // Count of sessions terminated
 }
+
+/**
+ * What the me service receives from the controller (after authentication)
+ */
+export interface MeInput {
+	// User information (from auth context)
+	userId: string; // From req.auth.userId
+	sessionId: string; // From req.auth.sessionId
+
+	// Request context (from middleware)
+	ipAddress: string;
+	userAgent: string;
+}
+
+/**
+ * What the me service returns to the controller
+ * Same structure as LoginResult but without action wrapper (success/message)
+ */
+export interface MeResult {
+	user: {
+		id: string;
+		email: string;
+		verified: boolean;
+		profile: {
+			firstName: string;
+			lastName: string;
+		};
+		organization: {
+			id: string;
+			name: string;
+			slug: string;
+		};
+		permissions: string[]; // Flattened permissions for UI (e.g., ["users:create", "clients:read"])
+	};
+	session: {
+		id: string;
+		expiresAt: Date; // Date object (not string like DTO)
+		lastActivity: Date;
+		tokenLastFour: string;
+	};
+}

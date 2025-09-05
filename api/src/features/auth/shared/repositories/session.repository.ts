@@ -169,3 +169,30 @@ export async function findSessionForAuth(
 		},
 	});
 }
+
+/**
+ * Find session by ID for profile endpoints
+ * Returns session details needed for /me response
+ * @param prisma - Prisma client instance
+ * @param sessionId - Session ID to look up
+ * @returns Session with essential fields or null if not found
+ */
+export async function findSessionById(
+	prisma: PrismaClient | Prisma.TransactionClient,
+	sessionId: string,
+): Promise<{
+	id: string;
+	expiresAt: Date;
+	lastActivity: Date;
+	tokenLastFour: string;
+} | null> {
+	return prisma.session.findUnique({
+		where: { id: sessionId },
+		select: {
+			id: true,
+			expiresAt: true,
+			lastActivity: true,
+			tokenLastFour: true,
+		},
+	});
+}

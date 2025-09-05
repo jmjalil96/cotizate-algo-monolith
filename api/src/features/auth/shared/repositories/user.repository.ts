@@ -171,6 +171,39 @@ export async function findUserForLogin(
 }
 
 /**
+ * Find user by ID with complete context (profile, organization, roles, permissions)
+ * Returns all data needed for profile endpoints like /me
+ * @param prisma - Prisma client instance
+ * @param userId - User ID to look up
+ * @returns User with complete login context or null if not found
+ */
+export async function findUserById(
+	prisma: PrismaClient | Prisma.TransactionClient,
+	userId: string,
+): Promise<UserWithLoginContext | null> {
+	return await prisma.user.findUnique({
+		where: { id: userId },
+		include: {
+			profile: true,
+			organization: true,
+			roles: {
+				include: {
+					role: {
+						include: {
+							permissions: {
+								include: {
+									permission: true,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	});
+}
+
+/**
  * Increment user login attempts and lock account if max attempts reached
  * @param prisma - Prisma transaction client
  * @param userId - User ID to update

@@ -1,4 +1,5 @@
 import type { PrismaClient } from "@prisma/client";
+import { MeService } from "../../domain/profile/me.service.js";
 import { EmailVerificationService } from "../../domain/registration/emailVerification.service.js";
 import { RegisterService } from "../../domain/registration/register.service.js";
 import { ResendService } from "../../domain/registration/resend.service.js";
@@ -15,6 +16,7 @@ export interface AuthServices {
 	resendService: ResendService;
 	loginService: LoginService;
 	logoutService: LogoutService;
+	meService: MeService;
 	// Future services can be added here:
 	// passwordResetService: PasswordResetService;
 }
@@ -32,6 +34,7 @@ export function createAuthServices(prisma: PrismaClient): AuthServices {
 		resendService: new ResendService(prisma),
 		loginService: new LoginService(prisma),
 		logoutService: new LogoutService(prisma),
+		meService: new MeService(prisma),
 		// Future services initialization:
 		// passwordResetService: new PasswordResetService(prisma),
 	};
@@ -50,5 +53,6 @@ export function createMockAuthServices(overrides?: Partial<AuthServices>): AuthS
 		resendService: overrides?.resendService || ({} as ResendService),
 		loginService: overrides?.loginService || ({} as LoginService),
 		logoutService: overrides?.logoutService || ({} as LogoutService),
+		meService: overrides?.meService || ({} as MeService),
 	};
 }
