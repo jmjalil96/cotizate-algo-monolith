@@ -4,6 +4,12 @@ import { authenticate } from "../../../shared/middleware/auth.middleware.js";
 import { validate } from "../../../shared/middleware/validator.js";
 import { asyncHandler } from "../../../shared/utils/asyncHandler.js";
 import { createAuthServices } from "../shared/factories/auth.factory.js";
+import { PasswordController } from "./password/password.controller.js";
+import {
+	changePasswordRequestSchema,
+	forgotPasswordRequestSchema,
+	resetPasswordRequestSchema,
+} from "./password/password.dto.js";
 import { ProfileController } from "./profile/profile.controller.js";
 import { RegistrationController } from "./registration/registration.controller.js";
 import {
@@ -25,6 +31,7 @@ const authServices = createAuthServices(prisma);
 const registrationController = new RegistrationController(authServices);
 const sessionController = new SessionController(authServices);
 const profileController = new ProfileController(authServices);
+const passwordController = new PasswordController(authServices);
 
 /**
  * POST /api/v1/auth/register
@@ -179,6 +186,86 @@ router.get(
 	authenticate,
 	asyncHandler(async (req, res) => {
 		await profileController.getMe(req, res);
+	}),
+);
+
+/**
+ * POST /api/v1/auth/forgot-password
+ * Request password reset via email
+ *
+ * Request body:
+ * - email: string
+ *
+ * Response 200:
+ * - success: boolean (always true)
+ * - message: string (generic message for security)
+ * - otpExpiresAt: string (ISO date when OTP expires, if sent)
+ *
+ * Error responses:
+ * - 400: Validation failed
+ * - 500: Internal server error
+ *
+ * Note: Always returns success to prevent email enumeration attacks
+ */
+router.post(
+	"/forgot-password",
+	validate({ body: forgotPasswordRequestSchema }),
+	asyncHandler(async (req, res) => {
+		await passwordController.forgotPassword(req, res);
+	}),
+);
+
+/**
+ * POST /api/v1/auth/reset-password
+ * Complete password reset with OTP verification
+ *
+ * Request body:
+ * - email: string
+ * - otpCode: string (6-digit numeric)
+ * - newPassword: string
+ *
+ * Response 200:
+ * - success: boolean
+ * - message: string
+ *
+ * Error responses:
+ * - 400: Invalid code, expired, no session, etc.
+ * - 429: Too many attempts (session locked)
+ * - 500: Internal server error
+ */
+router.post(
+	"/reset-password",
+	validate({ body: resetPasswordRequestSchema }),
+	asyncHandler(async (req, res) => {
+		await passwordController.resetPassword(req, res);
+	}),
+);
+
+/**
+ * POST /api/v1/auth/change-password
+ * Change password for authenticated user
+ *
+ * Requires: Valid session token in HTTP-only cookie
+ *
+ * Request body:
+ * - currentPassword: string
+ * - newPassword: string
+ *
+ * Response 200:
+ * - success: boolean
+ * - message: string
+ *
+ * Error responses:
+ * - 400: Invalid current password or validation failed
+ * - 401: Authentication required (no valid session)
+ * - 500: Internal server error
+ */
+router.post(
+	"/change-password",
+	authenticate,
+	validate({ body: changePasswordRequestSchema }),
+	asyncHandler(async (req, res) => {
+		await passwordController.changePassword(req, res);
 	}),
 );
 

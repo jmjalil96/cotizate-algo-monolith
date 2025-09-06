@@ -1,7 +1,9 @@
 /**
  * Express Request type extensions
- * Global type augmentations for authentication context
+ * Global type augmentations for authentication and authorization context
  */
+
+import type { UserWithLoginContext } from "../../features/auth/shared/repositories/user.repository.js";
 
 declare global {
 	namespace Express {
@@ -15,8 +17,24 @@ declare global {
 				sessionId: string;
 				organizationId: string;
 			};
+
+			/**
+			 * Authorization context set by requirePermission middleware
+			 * Contains complete user permissions and scope information for data filtering
+			 */
+			userContext?: {
+				userId: string;
+				sessionId: string;
+				organizationId: string;
+				permissions: string[];
+				user: UserWithLoginContext;
+				scope: {
+					canAccessAll: boolean;
+					filterType: "own" | "department" | "organization";
+					departmentId?: string;
+					roleLevel?: string;
+				};
+			};
 		}
 	}
 }
-
-export {};

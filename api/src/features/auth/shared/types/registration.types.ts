@@ -177,3 +177,72 @@ export interface MeResult {
 		tokenLastFour: string;
 	};
 }
+
+/**
+ * What the forgot password service receives from the controller (after DTO validation)
+ */
+export interface ForgotPasswordInput {
+	// User information
+	email: string; // Already lowercase from DTO
+
+	// Request context (from middleware)
+	ipAddress: string;
+	userAgent: string;
+}
+
+/**
+ * What the forgot password service returns to the controller
+ */
+export interface ForgotPasswordResult {
+	success: boolean;
+	message: string;
+	otpExpiresAt?: Date; // When new OTP expires (success case)
+	newSessionId?: string; // New session ID (for internal logging only)
+}
+
+/**
+ * What the reset password service receives from the controller (after DTO validation)
+ */
+export interface ResetPasswordInput {
+	// User information
+	email: string; // Already lowercase from DTO
+	otpCode: string; // Already validated format from DTO
+	newPassword: string; // Already validated format from DTO
+
+	// Request context (from middleware)
+	ipAddress: string;
+	userAgent: string;
+}
+
+/**
+ * What the reset password service returns to the controller
+ */
+export interface ResetPasswordResult {
+	success: boolean;
+	message: string;
+}
+
+/**
+ * What the change password service receives from the controller (after authentication)
+ */
+export interface ChangePasswordInput {
+	// User information (from auth context)
+	userId: string; // From req.auth.userId
+	sessionId: string; // From req.auth.sessionId
+
+	// Password information
+	currentPassword: string; // Already validated format from DTO
+	newPassword: string; // Already validated format from DTO
+
+	// Request context (from middleware)
+	ipAddress: string;
+	userAgent: string;
+}
+
+/**
+ * What the change password service returns to the controller
+ */
+export interface ChangePasswordResult {
+	success: boolean;
+	message: string;
+}

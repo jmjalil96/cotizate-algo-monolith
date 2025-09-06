@@ -1,6 +1,7 @@
 import type { Express, NextFunction, Request, Response } from "express";
 import express from "express";
 import { authRoutes } from "./features/auth/domain/auth.routes.js";
+import { clientRoutes } from "./features/clients/domain/clients.routes.js";
 import { notFound } from "./shared/errors/AppError.js";
 import { errorHandler } from "./shared/middleware/errorHandler.js";
 import { addRequestStartTime, requestLogger } from "./shared/middleware/requestLogger.js";
@@ -31,6 +32,7 @@ app.get("/health", (_req: Request, res: Response) => {
 
 // API Routes
 app.use("/api/v1/auth", authRoutes);
+app.use("/api/v1/clients", clientRoutes);
 
 // 404 handler (JSON, minimal logging)
 app.use((req: Request, _res: Response, next: NextFunction) => {

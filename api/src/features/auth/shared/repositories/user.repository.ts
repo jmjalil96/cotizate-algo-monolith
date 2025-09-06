@@ -264,3 +264,53 @@ export async function updateUserLastLogin(
 		},
 	});
 }
+
+/**
+ * Update user password and perform account recovery actions
+ * Used for password reset completion - updates password, unlocks account, and verifies user
+ * @param prisma - Prisma transaction client
+ * @param userId - User ID to update
+ * @param passwordHash - New hashed password
+ * @param wasUnverified - Whether user was unverified before reset (for audit logging)
+ * @returns Updated user with new password and recovery actions
+ */
+export async function updateUserPassword(
+	prisma: Prisma.TransactionClient,
+	userId: string,
+	passwordHash: string,
+	wasUnverified: boolean,
+): Promise<User> {
+	const now = new Date();
+
+	return prisma.user.update({
+		where: { id: userId },
+		data: {
+			password: passwordHash,
+			loginAttempts: 0, // Reset failed login attempts
+			isLocked: false, // Unlock account
+			verified: true, // Verify user (secondary verification option)
+			...(wasUnverified && { verifiedAt: now }), // Set verification timestamp if was unverified
+		},
+	});
+}
+
+/**
+ * Update user password only (for authenticated password changes)
+ * Used for change password - simple password update without recovery actions
+ * @param prisma - Prisma transaction client
+ * @param userId - User ID to update
+ * @param passwordHash - New hashed password
+ * @returns Updated user with new password
+ */
+export async function updateUserPasswordOnly(
+	prisma: Prisma.TransactionClient,
+	userId: string,
+	passwordHash: string,
+): Promise<User> {
+	return prisma.user.update({
+		where: { id: userId },
+		data: {
+			password: passwordHash,
+		},
+	});
+}

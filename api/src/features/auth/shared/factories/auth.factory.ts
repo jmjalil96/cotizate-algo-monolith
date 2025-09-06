@@ -1,4 +1,7 @@
 import type { PrismaClient } from "@prisma/client";
+import { ChangePasswordService } from "../../domain/password/changePassword.service.js";
+import { ForgotPasswordService } from "../../domain/password/forgotPassword.service.js";
+import { ResetPasswordService } from "../../domain/password/resetPassword.service.js";
 import { MeService } from "../../domain/profile/me.service.js";
 import { EmailVerificationService } from "../../domain/registration/emailVerification.service.js";
 import { RegisterService } from "../../domain/registration/register.service.js";
@@ -17,8 +20,9 @@ export interface AuthServices {
 	loginService: LoginService;
 	logoutService: LogoutService;
 	meService: MeService;
-	// Future services can be added here:
-	// passwordResetService: PasswordResetService;
+	forgotPasswordService: ForgotPasswordService;
+	resetPasswordService: ResetPasswordService;
+	changePasswordService: ChangePasswordService;
 }
 
 /**
@@ -35,8 +39,9 @@ export function createAuthServices(prisma: PrismaClient): AuthServices {
 		loginService: new LoginService(prisma),
 		logoutService: new LogoutService(prisma),
 		meService: new MeService(prisma),
-		// Future services initialization:
-		// passwordResetService: new PasswordResetService(prisma),
+		forgotPasswordService: new ForgotPasswordService(prisma),
+		resetPasswordService: new ResetPasswordService(prisma),
+		changePasswordService: new ChangePasswordService(prisma),
 	};
 }
 
@@ -54,5 +59,8 @@ export function createMockAuthServices(overrides?: Partial<AuthServices>): AuthS
 		loginService: overrides?.loginService || ({} as LoginService),
 		logoutService: overrides?.logoutService || ({} as LogoutService),
 		meService: overrides?.meService || ({} as MeService),
+		forgotPasswordService: overrides?.forgotPasswordService || ({} as ForgotPasswordService),
+		resetPasswordService: overrides?.resetPasswordService || ({} as ResetPasswordService),
+		changePasswordService: overrides?.changePasswordService || ({} as ChangePasswordService),
 	};
 }

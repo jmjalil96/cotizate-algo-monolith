@@ -140,6 +140,40 @@ export async function revokeUserSessions(
 }
 
 /**
+ * Revoke all active sessions for a user EXCEPT the specified session
+ * Used for password changes where current session should remain active
+ * @param prisma - Prisma transaction client
+ * @param userId - User ID whose sessions to revoke
+ * @param currentSessionId - Session ID to keep active
+ * @param reason - Reason for bulk revocation
+ * @returns Count of revoked sessions
+ */
+export async function revokeUserSessionsExcept(
+	prisma: Prisma.TransactionClient,
+	userId: string,
+	currentSessionId: string,
+	reason: string,
+): Promise<number> {
+	const now = new Date();
+
+	const result = await prisma.session.updateMany({
+		where: {
+			userId: userId,
+			revokedAt: null, // Only revoke active sessions
+			NOT: {
+				id: currentSessionId, // Exclude current session
+			},
+		},
+		data: {
+			revokedAt: now,
+			revokedReason: reason,
+		},
+	});
+
+	return result.count;
+}
+
+/**
  * Find session by token hash with minimal data for authentication middleware
  * Optimized query for performance - only loads essential auth validation fields
  * @param prisma - Prisma client instance

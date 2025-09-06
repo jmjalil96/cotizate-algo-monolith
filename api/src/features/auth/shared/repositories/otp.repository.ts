@@ -357,3 +357,160 @@ export async function updateSessionResendMetadata(
 		},
 	});
 }
+
+// ============================================
+// PASSWORD RESET FUNCTIONS (Purpose-Isolated)
+// ============================================
+
+/**
+ * Create an OTP session for password reset
+ * @param prisma - Prisma client instance (or transaction)
+ * @param data - Session creation data
+ * @returns Created OTP session
+ */
+export async function createPasswordResetOtpSession(
+	prisma: Prisma.TransactionClient,
+	data: {
+		userId: string;
+		organizationId: string;
+		email: string;
+		ipAddress?: string;
+		userAgent?: string;
+	},
+): Promise<OtpSession> {
+	const now = new Date();
+	const expiresAt = new Date(now.getTime() + SESSION_EXPIRY_HOURS * 60 * 60 * 1000);
+
+	return prisma.otpSession.create({
+		data: {
+			userId: data.userId,
+			organizationId: data.organizationId,
+			email: data.email,
+			purpose: "PASSWORD_RESET",
+			channel: "EMAIL",
+			expiresAt: expiresAt,
+			lastSentAt: now,
+			ipAddress: data.ipAddress || null,
+			userAgent: data.userAgent || null,
+		},
+	});
+}
+
+/**
+ * Find active password reset session by email
+ * Returns the most recent active session to handle edge cases of multiple sessions
+ * @param prisma - Prisma client instance
+ * @param email - Normalized email address
+ * @returns Most recent active session or null if not found
+ */
+export async function findActivePasswordResetSession(
+	prisma: PrismaClient | Prisma.TransactionClient,
+	email: string,
+): Promise<OtpSessionWithUser | null> {
+	const normalizedEmail = email.toLowerCase().trim();
+
+	return prisma.otpSession.findFirst({
+		where: {
+			email: normalizedEmail,
+			purpose: "PASSWORD_RESET",
+			active: true,
+		},
+		include: {
+			user: true,
+			organization: true,
+		},
+		orderBy: {
+			createdAt: "desc",
+		},
+	});
+}
+
+/**
+ * Find any password reset session for email (active or inactive) - most recent first
+ * Used to check if user has ANY password reset history
+ * @param prisma - Prisma client instance
+ * @param email - Normalized email address
+ * @returns Most recent session (any status) or null if never requested reset
+ */
+export async function findAnyPasswordResetSession(
+	prisma: PrismaClient | Prisma.TransactionClient,
+	email: string,
+): Promise<OtpSessionWithUser | null> {
+	const normalizedEmail = email.toLowerCase().trim();
+
+	return prisma.otpSession.findFirst({
+		where: {
+			email: normalizedEmail,
+			purpose: "PASSWORD_RESET",
+		},
+		include: {
+			user: true,
+			organization: true,
+		},
+		orderBy: {
+			createdAt: "desc",
+		},
+	});
+}
+
+/**
+ * Find password reset sessions with active locks
+ * Global rate limiting - prevents circumventing locks via new sessions
+ * @param prisma - Prisma client instance
+ * @param email - Normalized email address
+ * @returns Session with active lock or null if no locks found
+ */
+export async function findPasswordResetSessionsWithActiveLocks(
+	prisma: PrismaClient | Prisma.TransactionClient,
+	email: string,
+): Promise<OtpSession | null> {
+	const normalizedEmail = email.toLowerCase().trim();
+	const now = new Date();
+
+	return prisma.otpSession.findFirst({
+		where: {
+			email: normalizedEmail,
+			purpose: "PASSWORD_RESET",
+			lockUntil: {
+				gt: now,
+			},
+		},
+		orderBy: {
+			lockUntil: "desc", // Get the most restrictive lock
+		},
+	});
+}
+
+/**
+ * Create password reset OTP attempt record for audit trail
+ * @param prisma - Prisma transaction client
+ * @param data - OTP attempt data
+ * @returns Created OTP attempt record
+ */
+export async function createPasswordResetOtpAttempt(
+	prisma: Prisma.TransactionClient,
+	data: {
+		sessionId: string;
+		tokenId?: string;
+		userId?: string;
+		email: string;
+		status: "SUCCESS" | "FAILURE" | "EXPIRED" | "LOCKED";
+		reason?: string;
+		ipAddress?: string;
+		userAgent?: string;
+	},
+): Promise<OtpAttempt> {
+	return prisma.otpAttempt.create({
+		data: {
+			sessionId: data.sessionId,
+			tokenId: data.tokenId || null,
+			userId: data.userId || null,
+			email: data.email.toLowerCase().trim(),
+			purpose: "PASSWORD_RESET",
+			status: data.status,
+			reason: data.reason || null,
+			ipAddress: data.ipAddress || null,
+			userAgent: data.userAgent || null,
+		},
+	});
+}

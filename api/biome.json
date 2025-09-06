@@ -79,7 +79,8 @@
 				"src/config/env.ts",
 				"src/config/logger.ts",
 				"src/shared/middleware/errorHandler.ts",
-				"prisma/seed.ts"
+				"prisma/seed.ts",
+				"src/scripts/*.ts"
 			],
 			"linter": {
 				"rules": {
