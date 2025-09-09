@@ -1,0 +1,115 @@
+{
+	"$schema": "https://biomejs.dev/schemas/2.2.3/schema.json",
+	"vcs": {
+		"enabled": true,
+		"clientKind": "git",
+		"useIgnoreFile": true
+	},
+	"files": {
+		"ignoreUnknown": false
+	},
+	"formatter": {
+		"enabled": true,
+		"formatWithErrors": false,
+		"indentStyle": "tab",
+		"indentWidth": 2,
+		"lineWidth": 100,
+		"lineEnding": "lf"
+	},
+	"linter": {
+		"enabled": true,
+		"rules": {
+			"recommended": true,
+			"complexity": {
+				"noExcessiveCognitiveComplexity": "error",
+				"noVoid": "error"
+			},
+			"correctness": {
+				"noUnusedVariables": "error",
+				"noUnusedImports": "error",
+				"noUndeclaredDependencies": "error",
+				"useExhaustiveDependencies": "error"
+			},
+			"performance": {
+				"noAccumulatingSpread": "error",
+				"noDelete": "error"
+			},
+			"style": {
+				"noNegationElse": "error",
+				"useCollapsedElseIf": "error",
+				"useShorthandAssign": "error",
+				"useTemplate": "error",
+				"noParameterAssign": "error"
+			},
+			"suspicious": {
+				"noConsole": "warn",
+				"noDebugger": "error",
+				"noExplicitAny": "error"
+			}
+		}
+	},
+	"javascript": {
+		"formatter": {
+			"quoteStyle": "double",
+			"jsxQuoteStyle": "double",
+			"semicolons": "always",
+			"trailingCommas": "all",
+			"bracketSpacing": true,
+			"bracketSameLine": false,
+			"arrowParentheses": "always"
+		},
+		"parser": {
+			"jsxEverywhere": true
+		}
+	},
+	"assist": {
+		"enabled": true,
+		"actions": {
+			"source": {
+				"organizeImports": "on"
+			}
+		}
+	},
+	"overrides": [
+		{
+			"includes": [
+				"*.test.ts",
+				"*.test.tsx",
+				"*.spec.ts",
+				"*.spec.tsx",
+				"src/main.tsx",
+				"src/App.tsx",
+				"src/components/**/*.tsx",
+				"src/hooks/**/*.ts",
+				"src/stores/**/*.ts",
+				"src/utils/**/*.ts",
+				"vite.config.ts"
+			],
+			"linter": {
+				"rules": {
+					"suspicious": {
+						"noConsole": "off"
+					},
+					"complexity": {
+						"noExcessiveCognitiveComplexity": "off"
+					}
+				}
+			}
+		},
+		{
+			"includes": [
+				"src/components/**/*.tsx",
+				"src/hooks/use*.ts",
+				"src/stores/*Store.ts",
+				"src/stores/*store.ts"
+			],
+			"linter": {
+				"rules": {
+					"correctness": {
+						"useExhaustiveDependencies": "error"
+					}
+				}
+			}
+		}
+	]
+}
