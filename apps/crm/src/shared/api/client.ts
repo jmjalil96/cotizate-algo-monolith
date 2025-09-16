@@ -1,5 +1,6 @@
 import axios, { type AxiosInstance, type AxiosResponse } from "axios";
 import { API_CONFIG } from "../../config/api";
+import { normalizeApiError } from "./errors";
 
 class ApiClient {
 	private instance: AxiosInstance;
@@ -26,10 +27,16 @@ class ApiClient {
 		this.instance.interceptors.response.use(
 			(response: AxiosResponse) => response,
 			(error) => {
-				if (error.response?.status === 401 && this.clearAuthCallback) {
-					this.clearAuthCallback();
+				// Handle session expiry statuses (logout user)
+				if (this.clearAuthCallback) {
+					const status = error?.response?.status;
+					if (status === 401 || status === 419 || status === 440) {
+						this.clearAuthCallback();
+					}
 				}
-				return Promise.reject(error);
+
+				const normalized = normalizeApiError(error);
+				return Promise.reject(normalized);
 			},
 		);
 	}
